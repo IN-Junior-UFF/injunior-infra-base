@@ -8,7 +8,7 @@ cd "$ROOT_DIR"
 [ -f "$ROOT_DIR/.env" ] && set -a && . "$ROOT_DIR/.env" && set +a
 
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/infra}"
-RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-90}"
+RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-60}"
 pg_user="${POSTGRES_USER:-postgres}"
 
 upload_gdrive() {

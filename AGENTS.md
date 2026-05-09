@@ -41,7 +41,7 @@ docker compose exec postgres bash /scripts/create-user-db.sh <user> <password> <
 - Rede Docker: `infra-network` (bridge) — todos os containers da infra e dos projetos se comunicam por ela; projetos declaram a rede como `external: true` nos seus `docker-compose.prod.yml`
 - PostgreSQL 18+ usa `PGDATA=/var/lib/postgresql/18/docker` no volume montado em `/var/lib/postgresql` — compatível com `pg_upgrade --link` em versões futuras; `--data-checksums` ativado no initdb para detecção de corrupção silenciosa
 - `compose/postgres-scripts/create-user-db.sh` aceita dois modos: `app` (leitura/escrita em tabelas e sequences) e `full` (todos os privilégios incluindo functions); use `app` por padrão, `full` só para serviços que criam seus próprios objetos no banco
-- Backup salva em `BACKUP_DIR` (padrão `/var/backups/infra`): `pg_dumpall` (cluster completo), um dump por banco, e Redis RDB via `BGSAVE`; retenção configurável por `BACKUP_RETENTION_DAYS` (padrão 90 dias)
+- Backup salva em `BACKUP_DIR` (padrão `/var/backups/infra`): `pg_dumpall` (cluster completo), um dump por banco, e Redis RDB via `BGSAVE`; retenção configurável por `BACKUP_RETENTION_DAYS` (padrão 60 dias)
 - Upload opcional para Google Drive via rclone — se `RCLONE_REMOTE` estiver vazio, o passo é ignorado silenciosamente
 - `check-resources.sh` alerta via Telegram quando disco ≥ `RESOURCE_DISK_THRESHOLD` ou RAM ≥ `RESOURCE_RAM_THRESHOLD`; se `TELEGRAM_BOT_TOKEN` estiver vazio, funciona sem notificar
 - Todos os serviços usam `restart: unless-stopped` — reinicia em falhas e reboots, respeita `docker stop` manual

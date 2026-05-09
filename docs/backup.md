@@ -47,10 +47,10 @@ tail -f /var/log/infra-backup.log
 
 ## Retenção
 
-Padrão: 90 dias. Configure no `.env`:
+Padrão: 60 dias. Configure no `.env`:
 
 ```env
-BACKUP_RETENTION_DAYS=90
+BACKUP_RETENTION_DAYS=60
 ```
 
 A rotação se aplica tanto nos arquivos locais quanto no Google Drive (se configurado).

@@ -39,7 +39,7 @@ Todas as configurações ficam em `.env`. O `.env.example` documenta as disponí
 | `POSTGRES_PASSWORD` | Gerado automaticamente pelo setup |
 | `REDIS_PASSWORD` | Gerado automaticamente pelo setup |
 | `BACKUP_DIR` | Caminho local dos backups (padrão: `/var/backups/infra`) |
-| `BACKUP_RETENTION_DAYS` | Dias de retenção dos backups (padrão: `90`) |
+| `BACKUP_RETENTION_DAYS` | Dias de retenção dos backups (padrão: `60`) |
 | `TELEGRAM_BOT_TOKEN` | Token do bot para notificações (opcional) |
 | `TELEGRAM_CHAT_ID` | Chat ID para notificações (opcional) |
 | `RESOURCE_DISK_THRESHOLD` | % de disco para alertar (padrão: `80`) |
