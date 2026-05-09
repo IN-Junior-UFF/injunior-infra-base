@@ -18,6 +18,7 @@ cd injunior-infra-base
 ```
 
 O `setup.sh`:
+
 1. Cria `.env` a partir do `.env.example`
 2. Gera secrets (POSTGRES_PASSWORD, REDIS_PASSWORD)
 3. Gera `compose/redis/redis.conf`
@@ -49,3 +50,6 @@ Backups salvos em `BACKUP_DIR` (padrão `/var/backups/infra`). Retenção config
 
 - [docs/setup.md](docs/setup.md) — setup detalhado e variáveis de ambiente
 - [docs/projects.md](docs/projects.md) — ciclo de vida de projetos de cliente
+- [docs/backup.md](docs/backup.md) — backup, restauração e Google Drive
+- [docs/maintenance.md](docs/maintenance.md) — manutenção e atualização de serviços
+- [docs/security.md](docs/security.md) — headers de segurança e CORS no Caddy
