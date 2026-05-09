@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:18.3
+    hostname: postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGDATA: /var/lib/postgresql/18/docker
+      POSTGRES_INITDB_ARGS: --data-checksums
+    shm_size: 128mb
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./postgres-scripts:/scripts
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1G
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 10s
+    networks:
+      - infra-network
+
+  redis:
+    image: redis:8.6.2-alpine
+    hostname: redis
+    restart: unless-stopped
+    command: redis-server /etc/redis/redis.conf
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/etc/redis/redis.conf:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli -a ${REDIS_PASSWORD} --no-auth-warning ping | grep PONG || exit 1",
+        ]
+      interval: 30s
+      retries: 5
+      start_period: 10s
+      timeout: 5s
+    networks:
+      - infra-network
+
+  caddy:
+    image: caddy:2.11.2-alpine
+    hostname: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./caddy:/etc/caddy:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --server-response http://localhost 2>&1 | grep -qE '30[0-9]' || exit 1"]
+      interval: 30s
+      retries: 3
+      start_period: 30s
+      timeout: 5s
+    networks:
+      - infra-network

@@ -1,0 +1,16 @@
+include:
+  - compose/infra.yml
+
+networks:
+  infra-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
