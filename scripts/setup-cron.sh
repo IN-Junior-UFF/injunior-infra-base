@@ -31,9 +31,7 @@ echo "[cron] Test backup successful."
 
 echo "[cron] Registering cron jobs..."
 (
-  crontab -l 2>/dev/null \
-    | grep -v "backup.sh" \
-    | grep -v "check-resources.sh"
+  crontab -l 2>/dev/null || true
   echo "$CRON_BACKUP"
   echo "$CRON_RESOURCES"
 ) | crontab -
