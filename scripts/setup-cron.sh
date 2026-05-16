@@ -33,7 +33,8 @@ echo "[cron] Registering cron jobs..."
 (
   crontab -l 2>/dev/null \
     | grep -v "$BACKUP_SCRIPT" \
-    | grep -v "$RESOURCES_SCRIPT"
+    | grep -v "$RESOURCES_SCRIPT" \
+    || true
   echo "$CRON_BACKUP"
   echo "$CRON_RESOURCES"
 ) | crontab -
