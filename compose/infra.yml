@@ -75,7 +75,7 @@ services:
           cpus: "0.5"
           memory: 128M
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- --server-response http://localhost 2>&1 | grep -qE '30[0-9]' || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- --server-response http://localhost 2>&1 | grep -qE '(20[0-9]|30[0-9])' || exit 1"]
       interval: 30s
       retries: 3
       start_period: 30s
