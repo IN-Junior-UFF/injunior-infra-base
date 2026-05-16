@@ -20,7 +20,7 @@ set +a
 log "Generating redis.conf..."
 sed "s|REDIS_PASSWORD_PLACEHOLDER|${REDIS_PASSWORD}|" \
   "$SCRIPT_DIR/compose/redis/redis.conf.template" > "$SCRIPT_DIR/compose/redis/redis.conf"
-chmod 600 "$SCRIPT_DIR/compose/redis/redis.conf"
+chmod 644 "$SCRIPT_DIR/compose/redis/redis.conf"
 
 if grep -q "REDIS_PASSWORD_PLACEHOLDER" "$SCRIPT_DIR/compose/redis/redis.conf"; then
   echo "Error: redis.conf still contains placeholder — REDIS_PASSWORD may be empty." >&2
