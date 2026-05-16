@@ -33,6 +33,7 @@ notify_telegram() {
   curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
     -d chat_id="$TELEGRAM_CHAT_ID" \
     -d parse_mode="Markdown" \
+    -d disable_notification="true" \
     -d text="$msg" > /dev/null
 }
 
@@ -88,7 +89,9 @@ echo "[backup] Done. $file_count files, $total_size total."
 
 upload_gdrive
 
-notify_telegram "Backup concluido em \`$ts\`
-$file_count arquivos · $total_size total
-Retencao: ${RETENTION_DAYS} dias${RCLONE_REMOTE:+
-Enviado para Google Drive}"
+notify_telegram "✅ *Backup concluído*
+🖥 Host: \`$(hostname)\`
+🕐 Data: \`$ts\`
+📦 Arquivos: $file_count · $total_size total
+🗓 Retenção: ${RETENTION_DAYS} dias${RCLONE_REMOTE:+
+☁️ Enviado para Google Drive}"
