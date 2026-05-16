@@ -21,3 +21,7 @@
 }
 
 import sites/*.caddy
+
+:80 {
+	respond "OK" 200
+}
