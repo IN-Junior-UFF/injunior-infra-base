@@ -28,9 +28,11 @@ upload_gdrive() {
 }
 
 TELEGRAM_SILENT="${TELEGRAM_SILENT:-false}"
+BACKUP_TELEGRAM_ENABLED="${BACKUP_TELEGRAM_ENABLED:-true}"
 
 notify_telegram() {
   local msg="$1"
+  [ "$BACKUP_TELEGRAM_ENABLED" = "false" ] && return 0
   [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ] && return 0
   curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
     -d chat_id="$TELEGRAM_CHAT_ID" \
