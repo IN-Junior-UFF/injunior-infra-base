@@ -8,6 +8,7 @@ ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
 DISK_THRESHOLD="${RESOURCE_DISK_THRESHOLD:-80}"
 RAM_THRESHOLD="${RESOURCE_RAM_THRESHOLD:-85}"
+CPU_THRESHOLD="${RESOURCE_CPU_THRESHOLD:-90}"
 
 notify_telegram() {
   local msg="$1"
@@ -32,8 +33,14 @@ if [ "$ram_pct" -ge "$RAM_THRESHOLD" ]; then
   alerts+=("RAM: ${ram_pct}% usada (limite: ${RAM_THRESHOLD}%)")
 fi
 
+cpu_idle=$(top -bn1 | awk '/^%Cpu/ { print $8 }' | cut -d. -f1)
+cpu_pct=$(( 100 - cpu_idle ))
+if [ "$cpu_pct" -ge "$CPU_THRESHOLD" ]; then
+  alerts+=("CPU: ${cpu_pct}% usada (limite: ${CPU_THRESHOLD}%)")
+fi
+
 if [ "${#alerts[@]}" -eq 0 ]; then
-  echo "[check-resources] OK — disk: ${disk_usage}%, ram: ${ram_pct}%"
+  echo "[check-resources] OK — disk: ${disk_usage}%, ram: ${ram_pct}%, cpu: ${cpu_pct}%"
   exit 0
 fi
 
