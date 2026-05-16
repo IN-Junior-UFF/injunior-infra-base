@@ -10,12 +10,15 @@ DISK_THRESHOLD="${RESOURCE_DISK_THRESHOLD:-80}"
 RAM_THRESHOLD="${RESOURCE_RAM_THRESHOLD:-85}"
 CPU_THRESHOLD="${RESOURCE_CPU_THRESHOLD:-90}"
 
+TELEGRAM_SILENT="${TELEGRAM_SILENT:-false}"
+
 notify_telegram() {
   local msg="$1"
   [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ] && return 0
   curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
     -d chat_id="$TELEGRAM_CHAT_ID" \
     -d parse_mode="Markdown" \
+    -d disable_notification="$TELEGRAM_SILENT" \
     -d text="$msg" > /dev/null
 }
 
@@ -44,9 +47,12 @@ if [ "${#alerts[@]}" -eq 0 ]; then
   exit 0
 fi
 
-msg="Alerta de recursos em \`$(date '+%Y-%m-%d %H:%M')\`"$'\n'
+msg="⚠️ *Alerta de recursos*
+🖥 Host: \`$(hostname)\`
+🕐 Data: \`$(date '+%Y-%m-%d %H:%M')\`
+"
 for alert in "${alerts[@]}"; do
-  msg+="$alert"$'\n'
+  msg+="• $alert"$'\n'
   echo "[check-resources] ALERT: $alert"
 done
 

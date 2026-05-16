@@ -27,13 +27,15 @@ upload_gdrive() {
   echo "[backup] Remote rotation complete."
 }
 
+TELEGRAM_SILENT="${TELEGRAM_SILENT:-false}"
+
 notify_telegram() {
   local msg="$1"
   [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ] && return 0
   curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
     -d chat_id="$TELEGRAM_CHAT_ID" \
     -d parse_mode="Markdown" \
-    -d disable_notification="true" \
+    -d disable_notification="$TELEGRAM_SILENT" \
     -d text="$msg" > /dev/null
 }
 
