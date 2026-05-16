@@ -17,11 +17,6 @@ set -a
 source "$SCRIPT_DIR/.env"
 set +a
 
-if [ -z "$DOMAIN_BASE" ]; then
-  echo "Error: DOMAIN_BASE must be set in .env (ex: cliente.com)" >&2
-  exit 1
-fi
-
 log "Generating redis.conf..."
 sed "s|REDIS_PASSWORD_PLACEHOLDER|${REDIS_PASSWORD}|" \
   "$SCRIPT_DIR/compose/redis/redis.conf.template" > "$SCRIPT_DIR/compose/redis/redis.conf"
