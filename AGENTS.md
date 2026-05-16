@@ -19,12 +19,25 @@ Infra base para deploy de projetos de cliente em VPS. Sobe PostgreSQL, Redis e C
 # Criar banco/usuário em cluster já em execução
 docker compose exec postgres bash /scripts/create-user-db.sh <user> <password> <db> [app|full]
 
-# Backup
+# Backup e restauração
 ./scripts/backup.sh                        # backup manual (postgres + redis RDB)
 ./scripts/setup-cron.sh                   # registra backup diário (3h) + check-resources (horário)
 
 # Verificação de recursos
-./scripts/check-resources.sh              # disco e RAM vs thresholds
+./scripts/check-resources.sh              # disco, RAM e CPU vs thresholds
+
+# Gerenciamento de serviços
+./scripts/service.sh status               # status + uso de recursos de todos os serviços
+./scripts/service.sh health               # apenas containers unhealthy ou reiniciando
+./scripts/service.sh update <serviço>     # pull da imagem + recreate
+./scripts/service.sh recreate <serviço>   # recreate sem pull (aplica mudanças de config)
+./scripts/service.sh restart <serviço>    # reiniciar
+./scripts/service.sh stop <serviço>       # parar (pede confirmação para postgres e redis)
+./scripts/service.sh logs <serviço>       # tail de logs
+./scripts/service.sh restore <arquivo>    # restaurar backup SQL ou RDB
+
+# Configuração de logs do Docker (executar uma vez como root antes do setup)
+sudo ./scripts/setup-docker-logs.sh
 
 # Gerar secrets manualmente (preserva valores já preenchidos)
 ./scripts/gen-secrets.sh
@@ -32,7 +45,7 @@ docker compose exec postgres bash /scripts/create-user-db.sh <user> <password> <
 
 ## Decisões arquiteturais
 
-- `setup.sh` exige `DOMAIN_BASE` no `.env` antes de subir qualquer serviço; valida isso explicitamente para evitar provisionar com domínio vazio
+- `setup.sh` não valida `DOMAIN_BASE` — os serviços sobem sem ele; apenas o `provision-project.sh` o exige e faz a própria validação
 - Secrets (`POSTGRES_PASSWORD`, `REDIS_PASSWORD`) são gerados pelo `gen-secrets.sh` — só preenche variáveis vazias, nunca sobrescreve valores existentes
 - `compose/redis/redis.conf` é gerado pelo `setup.sh` a partir do template `redis.conf.template` com a senha substituída; não é commitado no git
 - `compose/caddy/Caddyfile` define apenas snippets reutilizáveis (`security_headers`, `compression`, `proxy_headers`) e `import sites/*.caddy` — nenhuma rota hardcoded; cada projeto tem seu próprio arquivo em `sites/`
@@ -43,6 +56,6 @@ docker compose exec postgres bash /scripts/create-user-db.sh <user> <password> <
 - `compose/postgres-scripts/create-user-db.sh` aceita dois modos: `app` (leitura/escrita em tabelas e sequences) e `full` (todos os privilégios incluindo functions); use `app` por padrão, `full` só para serviços que criam seus próprios objetos no banco
 - Backup salva em `BACKUP_DIR` (padrão `/var/backups/infra`): `pg_dumpall` (cluster completo), um dump por banco, e Redis RDB via `BGSAVE`; retenção configurável por `BACKUP_RETENTION_DAYS` (padrão 60 dias)
 - Upload opcional para Google Drive via rclone — se `RCLONE_REMOTE` estiver vazio, o passo é ignorado silenciosamente
-- `check-resources.sh` alerta via Telegram quando disco ≥ `RESOURCE_DISK_THRESHOLD` ou RAM ≥ `RESOURCE_RAM_THRESHOLD`; se `TELEGRAM_BOT_TOKEN` estiver vazio, funciona sem notificar
+- `check-resources.sh` alerta via Telegram quando disco ≥ `RESOURCE_DISK_THRESHOLD`, RAM ≥ `RESOURCE_RAM_THRESHOLD` ou CPU ≥ `RESOURCE_CPU_THRESHOLD`; se `TELEGRAM_BOT_TOKEN` estiver vazio, funciona sem notificar; `TELEGRAM_SILENT=true` envia sem som; `RESOURCES_TELEGRAM_ENABLED=false` desativa só esse script; `BACKUP_TELEGRAM_ENABLED=false` desativa só o backup
 - Todos os serviços usam `restart: unless-stopped` — reinicia em falhas e reboots, respeita `docker stop` manual
 - Projetos de cliente ficam em `/home/deploy/projects/<nome>/` na VPS, fora deste repositório; cada um tem seu próprio `docker-compose.prod.yml` com `infra-network` como rede externa

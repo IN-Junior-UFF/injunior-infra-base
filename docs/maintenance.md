@@ -1,36 +1,25 @@
 # Manutenção
 
-## Verificar saúde dos serviços
+## Gerenciar serviços com service.sh
+
+O `scripts/service.sh` centraliza as operações mais comuns:
 
 ```bash
-docker compose ps
-docker compose logs --tail=50 <serviço>
-```
-
-Para ver todos os containers com problema (unhealthy ou reiniciando):
-
-```bash
-docker compose ps --filter "status=restarting"
-docker ps --filter "health=unhealthy"
-```
-
-## Atualizar uma imagem
-
-```bash
-docker compose pull <serviço>
-docker compose up -d --force-recreate <serviço>
-docker compose logs -f <serviço>
+./scripts/service.sh status              # status e uso de recursos de todos os serviços
+./scripts/service.sh health              # apenas containers unhealthy ou reiniciando
+./scripts/service.sh logs <serviço>      # tail de logs (LINES=200 para mais linhas)
+./scripts/service.sh restart <serviço>   # reiniciar
+./scripts/service.sh update <serviço>    # pull da imagem + recreate
+./scripts/service.sh recreate <serviço>  # recreate sem pull (aplica mudanças de config)
+./scripts/service.sh start <serviço>     # iniciar serviço parado
+./scripts/service.sh stop <serviço>      # parar (pede confirmação para postgres e redis)
+./scripts/service.sh backup              # backup manual completo
+./scripts/service.sh restore <arquivo>   # restaurar backup (SQL ou RDB)
 ```
 
 Faça sempre um backup antes de atualizar o PostgreSQL ou o Redis.
 
 ## Aplicar mudanças de configuração
-
-Após editar o `.env` ou um arquivo de configuração montado como volume:
-
-```bash
-docker compose up -d --force-recreate <serviço>
-```
 
 Para o Caddy especificamente (sem downtime):
 
@@ -40,12 +29,12 @@ docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 ## Alertas de recursos
 
-O `scripts/check-resources.sh` verifica uso de disco e RAM e envia notificação no Telegram quando os thresholds forem ultrapassados. É registrado pelo `setup-cron.sh` para rodar toda hora.
+O `scripts/check-resources.sh` verifica uso de disco, RAM e CPU, e envia notificação no Telegram quando os thresholds forem ultrapassados. É registrado pelo `setup-cron.sh` para rodar toda hora.
 
 Saída quando tudo está ok:
 
 ```text
-[check-resources] OK — disk: 42%, ram: 61%
+[check-resources] OK — disk: 42%, ram: 61%, cpu: 15%
 ```
 
 Para acompanhar o log:
@@ -54,12 +43,25 @@ Para acompanhar o log:
 tail -f /var/log/infra-resources.log
 ```
 
-Thresholds configuráveis no `.env`:
+Thresholds e controle de notificações configuráveis no `.env`:
 
 ```env
 RESOURCE_DISK_THRESHOLD=80
 RESOURCE_RAM_THRESHOLD=85
+RESOURCE_CPU_THRESHOLD=90
+RESOURCES_TELEGRAM_ENABLED=true
 ```
+
+## Configurar rotação de logs do Docker
+
+Execute uma vez como root antes do setup para evitar acúmulo de logs nos containers:
+
+```bash
+sudo ./scripts/setup-docker-logs.sh
+sudo systemctl restart docker
+```
+
+Configura limite de 7 arquivos × 50 MB por container (~350 MB máx).
 
 ## Remover imagens antigas
 

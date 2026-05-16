@@ -31,7 +31,7 @@ Execute uma vez após o setup para registrar os jobs:
 Registra dois jobs no crontab:
 
 - **03:00 diário** — backup completo com rotação
-- **todo hora** — verificação de recursos (disco e RAM)
+- **todo hora** — verificação de recursos (disco, RAM e CPU)
 
 Para confirmar o registro:
 
@@ -101,7 +101,7 @@ RCLONE_PATH=infra/backups
 
 Se `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` estiverem preenchidos, o `backup.sh` envia:
 
-- Resumo ao concluir (contagem de arquivos e tamanho total)
+- Resumo ao concluir (host, data, contagem de arquivos e tamanho total)
 - Alerta em caso de falha com instrução para verificar os logs
 
 Para configurar:
@@ -113,26 +113,37 @@ Para configurar:
 ```env
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
 TELEGRAM_CHAT_ID=-1001234567890
+TELEGRAM_SILENT=true           # envia sem som (padrão: false)
+BACKUP_TELEGRAM_ENABLED=true   # desativa só o backup (padrão: true)
 ```
 
 ## Restaurando
 
-O backup gera arquivos SQL compatíveis com `psql` e `pg_restore`. Para restaurar um banco específico:
+Use o `service.sh` para restaurar de forma interativa:
 
 ```bash
 # Restaurar um banco individual
+./scripts/service.sh restore /var/backups/infra/2026-05-09_03-00.meu_projeto.sql.gz
+
+# Restaurar o cluster inteiro (migração ou desastre total)
+./scripts/service.sh restore /var/backups/infra/2026-05-09_03-00.all.sql.gz
+
+# Restaurar o Redis RDB
+./scripts/service.sh restore /var/backups/infra/2026-05-09_03-00.redis.rdb
+```
+
+Ou manualmente:
+
+```bash
+# Banco individual
 gunzip -c /var/backups/infra/2026-05-09_03-00.meu_projeto.sql.gz \
   | docker compose exec -T postgres psql -U postgres meu_projeto
 
-# Restaurar o cluster inteiro (migração ou desastre total)
+# Cluster inteiro
 gunzip -c /var/backups/infra/2026-05-09_03-00.all.sql.gz \
   | docker compose exec -T postgres psql -U postgres
-```
 
-Para o Redis RDB:
-
-```bash
-# Pare o Redis, copie o arquivo para o volume e reinicie
+# Redis RDB
 docker compose stop redis
 docker run --rm \
   -v infra-base_redis_data:/data \

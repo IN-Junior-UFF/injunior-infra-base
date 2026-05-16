@@ -33,7 +33,7 @@ Todas as configurações ficam em `.env`. O `.env.example` documenta as disponí
 
 | Variável | Descrição |
 | --- | --- |
-| `DOMAIN_BASE` | Domínio base da VPS (ex: `cliente.com`) — **obrigatório** |
+| `DOMAIN_BASE` | Domínio base da VPS (ex: `cliente.com`) |
 | `POSTGRES_USER` | Usuário administrador do PostgreSQL |
 | `POSTGRES_DB` | Banco padrão do PostgreSQL |
 | `POSTGRES_PASSWORD` | Gerado automaticamente pelo setup |
@@ -42,8 +42,12 @@ Todas as configurações ficam em `.env`. O `.env.example` documenta as disponí
 | `BACKUP_RETENTION_DAYS` | Dias de retenção dos backups (padrão: `60`) |
 | `TELEGRAM_BOT_TOKEN` | Token do bot para notificações (opcional) |
 | `TELEGRAM_CHAT_ID` | Chat ID para notificações (opcional) |
+| `TELEGRAM_SILENT` | Envia notificações sem som (padrão: `false`) |
+| `BACKUP_TELEGRAM_ENABLED` | Ativa notificações do backup (padrão: `true`) |
+| `RESOURCES_TELEGRAM_ENABLED` | Ativa notificações de recursos (padrão: `true`) |
 | `RESOURCE_DISK_THRESHOLD` | % de disco para alertar (padrão: `80`) |
 | `RESOURCE_RAM_THRESHOLD` | % de RAM para alertar (padrão: `85`) |
+| `RESOURCE_CPU_THRESHOLD` | % de CPU para alertar (padrão: `90`) |
 | `RCLONE_REMOTE` | Remote do rclone para upload ao Google Drive (opcional) |
 | `RCLONE_PATH` | Caminho no remote (padrão: `infra/backups`) |
 
@@ -63,7 +67,7 @@ O Caddy emite certificados HTTPS automaticamente via Let's Encrypt.
 
 Registra dois cron jobs:
 - **03:00 diário** — backup completo (PostgreSQL + Redis RDB)
-- **A cada hora** — verificação de uso de disco e RAM
+- **A cada hora** — verificação de uso de disco, RAM e CPU
 
 ## Criar banco e usuário manualmente
 

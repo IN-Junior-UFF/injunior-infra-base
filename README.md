@@ -13,7 +13,10 @@ Infra base para deploy de projetos de cliente em VPS. Sobe PostgreSQL, Redis e C
 git clone <repo>
 cd injunior-infra-base
 
-# Edite o .env após a cópia e defina DOMAIN_BASE
+# Configurar rotação de logs do Docker (uma vez, como root)
+sudo ./scripts/setup-docker-logs.sh
+sudo systemctl restart docker
+
 ./setup.sh
 ```
 
@@ -46,10 +49,19 @@ O `setup.sh`:
 
 Backups salvos em `BACKUP_DIR` (padrão `/var/backups/infra`). Retenção configurável via `BACKUP_RETENTION_DAYS`.
 
+## Gerenciamento de serviços
+
+```bash
+./scripts/service.sh status            # status + recursos
+./scripts/service.sh update <serviço>  # pull + recreate
+./scripts/service.sh restore <arquivo> # restaurar backup
+```
+
 ## Documentação
 
 - [docs/setup.md](docs/setup.md) — setup detalhado e variáveis de ambiente
 - [docs/projects.md](docs/projects.md) — ciclo de vida de projetos de cliente
 - [docs/backup.md](docs/backup.md) — backup, restauração e Google Drive
 - [docs/maintenance.md](docs/maintenance.md) — manutenção e atualização de serviços
+- [docs/service.md](docs/service.md) — referência completa do scripts/service.sh
 - [docs/security.md](docs/security.md) — headers de segurança e CORS no Caddy
