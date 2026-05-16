@@ -9,7 +9,7 @@ BACKUP_LOG="/var/log/infra-backup.log"
 RESOURCES_LOG="/var/log/infra-resources.log"
 
 CRON_BACKUP="0 3 * * * cd $ROOT_DIR && bash $BACKUP_SCRIPT >> $BACKUP_LOG 2>&1"
-CRON_RESOURCES="* * * * * cd $ROOT_DIR && bash $RESOURCES_SCRIPT >> $RESOURCES_LOG 2>&1"
+CRON_RESOURCES="0 * * * * cd $ROOT_DIR && bash $RESOURCES_SCRIPT >> $RESOURCES_LOG 2>&1"
 
 echo "[cron] Validating requirements..."
 
