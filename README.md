@@ -65,3 +65,7 @@ Backups salvos em `BACKUP_DIR` (padrão `/var/backups/infra`). Retenção config
 - [docs/maintenance.md](docs/maintenance.md) — manutenção e atualização de serviços
 - [docs/service.md](docs/service.md) — referência completa do scripts/service.sh
 - [docs/security.md](docs/security.md) — headers de segurança e CORS no Caddy
+
+## Autores
+
+- [@RianPolonini](https://github.com/RianPolonini)
