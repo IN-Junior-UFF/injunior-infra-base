@@ -16,6 +16,11 @@ openssl version
 ```bash
 git clone <repo>
 cd injunior-infra-base
+
+# Configurar rotação de logs do Docker (uma vez, como root)
+sudo ./scripts/setup-docker-logs.sh
+sudo systemctl restart docker
+
 ./setup.sh
 ```
 

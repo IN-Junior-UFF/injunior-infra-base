@@ -33,6 +33,8 @@ Registra dois jobs no crontab:
 - **03:00 diário** — backup completo com rotação
 - **todo hora** — verificação de recursos (disco, RAM e CPU)
 
+O script também cria os arquivos de log automaticamente (`/var/log/infra-backup.log` e `/var/log/infra-resources.log`) se não existirem.
+
 Para confirmar o registro:
 
 ```bash
@@ -43,6 +45,7 @@ Para acompanhar os logs:
 
 ```bash
 tail -f /var/log/infra-backup.log
+tail -f /var/log/infra-resources.log
 ```
 
 ## Retenção
@@ -113,8 +116,9 @@ Para configurar:
 ```env
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
 TELEGRAM_CHAT_ID=-1001234567890
-TELEGRAM_SILENT=true           # envia sem som (padrão: false)
-BACKUP_TELEGRAM_ENABLED=true   # desativa só o backup (padrão: true)
+TELEGRAM_SILENT=true                 # envia sem som (padrão: false)
+BACKUP_TELEGRAM_ENABLED=false        # desativa notificações do backup (padrão: true)
+RESOURCES_TELEGRAM_ENABLED=false     # desativa notificações de recursos (padrão: true)
 ```
 
 ## Restaurando

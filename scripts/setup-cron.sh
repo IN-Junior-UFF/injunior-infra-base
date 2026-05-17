@@ -25,6 +25,14 @@ BACKUP_DIR="${BACKUP_DIR:-/var/backups/infra}"
 mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
 
+for log_file in "$BACKUP_LOG" "$RESOURCES_LOG"; do
+  if [ ! -f "$log_file" ]; then
+    echo "[cron] Creating $log_file..."
+    sudo touch "$log_file"
+    sudo chown "$(id -u)":"$(id -g)" "$log_file"
+  fi
+done
+
 echo "[cron] Running test backup..."
 bash "$BACKUP_SCRIPT"
 echo "[cron] Test backup successful."

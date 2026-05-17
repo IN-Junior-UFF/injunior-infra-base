@@ -55,6 +55,7 @@ sudo ./scripts/setup-docker-logs.sh
 - PostgreSQL 18+ usa `PGDATA=/var/lib/postgresql/18/docker` no volume montado em `/var/lib/postgresql` — compatível com `pg_upgrade --link` em versões futuras; `--data-checksums` ativado no initdb para detecção de corrupção silenciosa
 - `compose/postgres-scripts/create-user-db.sh` aceita dois modos: `app` (leitura/escrita em tabelas e sequences) e `full` (todos os privilégios incluindo functions); use `app` por padrão, `full` só para serviços que criam seus próprios objetos no banco
 - Backup salva em `BACKUP_DIR` (padrão `/var/backups/infra`): `pg_dumpall` (cluster completo), um dump por banco, e Redis RDB via `BGSAVE`; retenção configurável por `BACKUP_RETENTION_DAYS` (padrão 60 dias)
+- `setup-cron.sh` cria os arquivos de log `/var/log/infra-backup.log` e `/var/log/infra-resources.log` automaticamente com `sudo touch` + `chown` se não existirem
 - Upload opcional para Google Drive via rclone — se `RCLONE_REMOTE` estiver vazio, o passo é ignorado silenciosamente
 - `check-resources.sh` alerta via Telegram quando disco ≥ `RESOURCE_DISK_THRESHOLD`, RAM ≥ `RESOURCE_RAM_THRESHOLD` ou CPU ≥ `RESOURCE_CPU_THRESHOLD`; se `TELEGRAM_BOT_TOKEN` estiver vazio, funciona sem notificar; `TELEGRAM_SILENT=true` envia sem som; `RESOURCES_TELEGRAM_ENABLED=false` desativa só esse script; `BACKUP_TELEGRAM_ENABLED=false` desativa só o backup
 - Todos os serviços usam `restart: unless-stopped` — reinicia em falhas e reboots, respeita `docker stop` manual
