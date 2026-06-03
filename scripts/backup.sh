@@ -78,7 +78,7 @@ sleep 2
 docker run --rm \
   -v "$(basename "$ROOT_DIR")_redis_data":/data \
   -v "$BACKUP_DIR":/backup \
-  alpine cp /data/dump.rdb "/backup/$ts.redis.rdb"
+  alpine sh -c "cp /data/dump.rdb /backup/$ts.redis.rdb && chown $(id -u):$(id -g) /backup/$ts.redis.rdb"
 chmod 600 "$BACKUP_DIR/$ts.redis.rdb"
 echo "[backup] Redis RDB: $BACKUP_DIR/$ts.redis.rdb"
 
