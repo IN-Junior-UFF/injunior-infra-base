@@ -7,19 +7,21 @@ SITES_DIR="$ROOT_DIR/compose/caddy/sites"
 
 usage() {
   cat >&2 <<EOF
-Usage: $0 <name> [--prefix|-p <prefix>]
+Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n]
 
-  <name>              Project slug (lowercase, hyphens only). Used for:
-                        - PostgreSQL user/database
-                        - Subdomain: [prefix.]<name>.<DOMAIN_BASE>
-                        - Caddy site file: $SITES_DIR/<name>.caddy
+  <name>                Project slug (lowercase, hyphens only). Used for:
+                          - PostgreSQL user/database
+                          - Caddy site file: $SITES_DIR/<name>.caddy
 
   --prefix|-p <prefix>  Subdomain prefix (default: api). Use @ for no prefix.
+  --with-name|-n        Include <name> in the subdomain.
 
 Examples:
-  $0 meu-projeto                      -> api.meu-projeto.<DOMAIN_BASE>
-  $0 meu-projeto --prefix admin       -> admin.meu-projeto.<DOMAIN_BASE>
-  $0 meu-projeto -p @                 -> meu-projeto.<DOMAIN_BASE>
+  $0 meu-projeto                       -> api.<DOMAIN_BASE>
+  $0 meu-projeto --prefix admin        -> admin.<DOMAIN_BASE>
+  $0 meu-projeto -p @                  -> <DOMAIN_BASE>
+  $0 meu-projeto --with-name           -> api.meu-projeto.<DOMAIN_BASE>
+  $0 meu-projeto -n --prefix admin     -> admin.meu-projeto.<DOMAIN_BASE>
 EOF
   exit 1
 }
@@ -30,12 +32,17 @@ NAME="$1"
 shift
 
 PREFIX="api"
+WITH_NAME=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --prefix|-p)
       [ $# -lt 2 ] && { echo "Error: --prefix requires a value." >&2; exit 1; }
       PREFIX="$2"
       shift 2
+      ;;
+    --with-name|-n)
+      WITH_NAME=true
+      shift
       ;;
     *)
       echo "Error: unknown argument '$1'" >&2
@@ -63,10 +70,18 @@ fi
 
 DB_NAME="${NAME//-/_}"
 DB_USER="${NAME//-/_}"
-if [ "$PREFIX" = "@" ]; then
-  API_SUBDOMAIN="${NAME}.${DOMAIN_BASE}"
+if [ "$WITH_NAME" = true ]; then
+  if [ "$PREFIX" = "@" ]; then
+    API_SUBDOMAIN="${NAME}.${DOMAIN_BASE}"
+  else
+    API_SUBDOMAIN="${PREFIX}.${NAME}.${DOMAIN_BASE}"
+  fi
 else
-  API_SUBDOMAIN="${PREFIX}.${NAME}.${DOMAIN_BASE}"
+  if [ "$PREFIX" = "@" ]; then
+    API_SUBDOMAIN="${DOMAIN_BASE}"
+  else
+    API_SUBDOMAIN="${PREFIX}.${DOMAIN_BASE}"
+  fi
 fi
 CADDY_FILE="$SITES_DIR/${NAME}.caddy"
 
