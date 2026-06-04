@@ -7,7 +7,7 @@ SITES_DIR="$ROOT_DIR/compose/caddy/sites"
 
 usage() {
   cat >&2 <<EOF
-Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n] [--port|-P <port>]
+Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n] [--port|-P <port>] [--deploy-key]
 
   <name>                Project slug (lowercase, hyphens only). Used for:
                           - PostgreSQL user/database
@@ -16,6 +16,9 @@ Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n] [--port|-P <port>]
   --prefix|-p <prefix>  Subdomain prefix (default: api). Use @ for no prefix.
   --with-name|-n        Include <name> in the subdomain.
   --port|-P <port>      Container port to proxy to (default: 3000).
+  --deploy-key          Generate an SSH deploy key pair for this project.
+                          Private key saved to ~/.ssh/<name>_deploy_key.
+                          Public key printed at the end — add it to GitHub.
 
 Examples:
   $0 meu-projeto                       -> api.<DOMAIN_BASE>
@@ -24,6 +27,7 @@ Examples:
   $0 meu-projeto --with-name           -> api.meu-projeto.<DOMAIN_BASE>
   $0 meu-projeto -n --prefix admin     -> admin.meu-projeto.<DOMAIN_BASE>
   $0 meu-projeto -P 8080               -> proxy to port 8080
+  $0 meu-projeto --deploy-key          -> also generates SSH deploy key
 EOF
   exit 1
 }
@@ -36,6 +40,7 @@ shift
 PREFIX="api"
 WITH_NAME=false
 PORT="3000"
+DEPLOY_KEY=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --prefix|-p)
@@ -51,6 +56,10 @@ while [ $# -gt 0 ]; do
       [ $# -lt 2 ] && { echo "Error: --port requires a value." >&2; exit 1; }
       PORT="$2"
       shift 2
+      ;;
+    --deploy-key)
+      DEPLOY_KEY=true
+      shift
       ;;
     *)
       echo "Error: unknown argument '$1'" >&2
@@ -120,6 +129,14 @@ EOF
 echo "[provision] Reloading Caddy..."
 docker compose -f "$ROOT_DIR/docker-compose.yml" exec caddy caddy reload --config /etc/caddy/Caddyfile
 
+if [ "$DEPLOY_KEY" = true ]; then
+  DEPLOY_KEY_PATH="$HOME/.ssh/${NAME}_deploy_key"
+  echo "[provision] Generating deploy key..."
+  ssh-keygen -t ed25519 -f "$DEPLOY_KEY_PATH" -N "" -C "${NAME}-deploy" -q
+  chmod 600 "$DEPLOY_KEY_PATH"
+  echo "[provision] Deploy key saved to $DEPLOY_KEY_PATH"
+fi
+
 echo ""
 echo "[provision] Done! Save these credentials in the project .env:"
 echo ""
@@ -130,3 +147,10 @@ echo "  Project deploy path: /home/deploy/projects/${NAME}/"
 echo "  Caddy site: $CADDY_FILE"
 echo ""
 echo "  Network: add 'infra-network' as external network in docker-compose.yml"
+
+if [ "$DEPLOY_KEY" = true ]; then
+  echo ""
+  echo "  Deploy key (add to GitHub → Settings → Deploy keys):"
+  echo ""
+  cat "${DEPLOY_KEY_PATH}.pub"
+fi
