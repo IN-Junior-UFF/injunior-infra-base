@@ -7,7 +7,7 @@ SITES_DIR="$ROOT_DIR/compose/caddy/sites"
 
 usage() {
   cat >&2 <<EOF
-Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n] [--port|-P <port>] [--deploy-key] [--no-db]
+Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n] [--port|-P <port>] [--deploy-key] [--no-db] [--no-csp]
 
   <name>                Project slug (lowercase, hyphens only). Used for:
                           - PostgreSQL user/database (unless --no-db)
@@ -20,6 +20,8 @@ Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n] [--port|-P <port>] [--d
                           Private key saved to ~/.ssh/<name>_deploy_key.
                           Public key printed at the end — add it to GitHub.
   --no-db               Skip PostgreSQL user/database creation.
+  --no-csp              Omit Content-Security-Policy header from Caddy config.
+                          Useful for Next.js frontends that manage their own CSP.
 
 Examples:
   $0 meu-projeto                       -> api.<DOMAIN_BASE>
@@ -30,6 +32,7 @@ Examples:
   $0 meu-projeto -P 8080               -> proxy to port 8080
   $0 meu-projeto --deploy-key          -> also generates SSH deploy key
   $0 meu-projeto --no-db               -> skip database provisioning
+  $0 meu-projeto --no-csp              -> omit CSP header (e.g. Next.js apps)
 EOF
   exit 1
 }
@@ -44,6 +47,7 @@ WITH_NAME=false
 PORT="3000"
 DEPLOY_KEY=false
 NO_DB=false
+NO_CSP=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --prefix|-p)
@@ -66,6 +70,10 @@ while [ $# -gt 0 ]; do
       ;;
     --no-db)
       NO_DB=true
+      shift
+      ;;
+    --no-csp)
+      NO_CSP=true
       shift
       ;;
     *)
@@ -127,7 +135,18 @@ fi
 
 mkdir -p "$SITES_DIR"
 
-cat > "$CADDY_FILE" <<EOF
+if [ "$NO_CSP" = true ]; then
+  cat > "$CADDY_FILE" <<EOF
+${API_SUBDOMAIN} {
+	import compression
+	import security_headers
+	reverse_proxy ${NAME}:${PORT} {
+		import proxy_headers
+	}
+}
+EOF
+else
+  cat > "$CADDY_FILE" <<EOF
 ${API_SUBDOMAIN} {
 	import compression
 	import security_headers
@@ -137,6 +156,7 @@ ${API_SUBDOMAIN} {
 	}
 }
 EOF
+fi
 
 echo "[provision] Reloading Caddy..."
 docker compose -f "$ROOT_DIR/docker-compose.yml" exec caddy caddy reload --config /etc/caddy/Caddyfile

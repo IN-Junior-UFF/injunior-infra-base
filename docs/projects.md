@@ -27,6 +27,7 @@ Ao final, imprime o `DATABASE_URL` completo — **copie agora**, a senha não é
 | `--port/-P <port>` | Porta do container para o Caddy rotear | `3000` |
 | `--deploy-key` | Gera par de chaves SSH para deploy via Git | — |
 | `--no-db` | Pula a criação de usuário/banco no PostgreSQL (ex: frontends) | — |
+| `--no-csp` | Omite o header `Content-Security-Policy` do Caddy (ex: Next.js) | — |
 
 Exemplos:
 
@@ -40,8 +41,8 @@ Exemplos:
 # já gera a deploy key junto
 ./scripts/provision-project.sh meu-projeto --deploy-key
 
-# frontend (sem banco)
-./scripts/provision-project.sh meu-frontend --prefix @ --port 3000 --no-db --deploy-key
+# frontend Next.js (sem banco, sem CSP)
+./scripts/provision-project.sh meu-frontend --prefix @ --port 3000 --no-db --no-csp --deploy-key
 ```
 
 ### Deploy via Git (deploy key)
