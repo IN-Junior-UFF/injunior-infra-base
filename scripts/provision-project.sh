@@ -7,7 +7,7 @@ SITES_DIR="$ROOT_DIR/compose/caddy/sites"
 
 usage() {
   cat >&2 <<EOF
-Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n]
+Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n] [--port|-P <port>]
 
   <name>                Project slug (lowercase, hyphens only). Used for:
                           - PostgreSQL user/database
@@ -15,6 +15,7 @@ Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n]
 
   --prefix|-p <prefix>  Subdomain prefix (default: api). Use @ for no prefix.
   --with-name|-n        Include <name> in the subdomain.
+  --port|-P <port>      Container port to proxy to (default: 3000).
 
 Examples:
   $0 meu-projeto                       -> api.<DOMAIN_BASE>
@@ -22,6 +23,7 @@ Examples:
   $0 meu-projeto -p @                  -> <DOMAIN_BASE>
   $0 meu-projeto --with-name           -> api.meu-projeto.<DOMAIN_BASE>
   $0 meu-projeto -n --prefix admin     -> admin.meu-projeto.<DOMAIN_BASE>
+  $0 meu-projeto -P 8080               -> proxy to port 8080
 EOF
   exit 1
 }
@@ -33,6 +35,7 @@ shift
 
 PREFIX="api"
 WITH_NAME=false
+PORT="3000"
 while [ $# -gt 0 ]; do
   case "$1" in
     --prefix|-p)
@@ -43,6 +46,11 @@ while [ $# -gt 0 ]; do
     --with-name|-n)
       WITH_NAME=true
       shift
+      ;;
+    --port|-P)
+      [ $# -lt 2 ] && { echo "Error: --port requires a value." >&2; exit 1; }
+      PORT="$2"
+      shift 2
       ;;
     *)
       echo "Error: unknown argument '$1'" >&2
@@ -103,7 +111,7 @@ ${API_SUBDOMAIN} {
 	import compression
 	import security_headers
 	header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'"
-	reverse_proxy ${NAME}:3000 {
+	reverse_proxy ${NAME}:${PORT} {
 		import proxy_headers
 	}
 }
