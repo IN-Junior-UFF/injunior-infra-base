@@ -26,6 +26,7 @@ Ao final, imprime o `DATABASE_URL` completo — **copie agora**, a senha não é
 | `--with-name/-n` | Inclui `<name>` no subdomínio (`api.meu-projeto.<DOMAIN_BASE>`) | — |
 | `--port/-P <port>` | Porta do container para o Caddy rotear | `3000` |
 | `--deploy-key` | Gera par de chaves SSH para deploy via Git | — |
+| `--no-db` | Pula a criação de usuário/banco no PostgreSQL (ex: frontends) | — |
 
 Exemplos:
 
@@ -38,6 +39,9 @@ Exemplos:
 
 # já gera a deploy key junto
 ./scripts/provision-project.sh meu-projeto --deploy-key
+
+# frontend (sem banco)
+./scripts/provision-project.sh meu-frontend --prefix @ --port 3000 --no-db --deploy-key
 ```
 
 ### Deploy via Git (deploy key)

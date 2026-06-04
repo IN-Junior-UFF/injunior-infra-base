@@ -7,10 +7,10 @@ SITES_DIR="$ROOT_DIR/compose/caddy/sites"
 
 usage() {
   cat >&2 <<EOF
-Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n] [--port|-P <port>] [--deploy-key]
+Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n] [--port|-P <port>] [--deploy-key] [--no-db]
 
   <name>                Project slug (lowercase, hyphens only). Used for:
-                          - PostgreSQL user/database
+                          - PostgreSQL user/database (unless --no-db)
                           - Caddy site file: $SITES_DIR/<name>.caddy
 
   --prefix|-p <prefix>  Subdomain prefix (default: api). Use @ for no prefix.
@@ -19,6 +19,7 @@ Usage: $0 <name> [--prefix|-p <prefix>] [--with-name|-n] [--port|-P <port>] [--d
   --deploy-key          Generate an SSH deploy key pair for this project.
                           Private key saved to ~/.ssh/<name>_deploy_key.
                           Public key printed at the end — add it to GitHub.
+  --no-db               Skip PostgreSQL user/database creation.
 
 Examples:
   $0 meu-projeto                       -> api.<DOMAIN_BASE>
@@ -28,6 +29,7 @@ Examples:
   $0 meu-projeto -n --prefix admin     -> admin.meu-projeto.<DOMAIN_BASE>
   $0 meu-projeto -P 8080               -> proxy to port 8080
   $0 meu-projeto --deploy-key          -> also generates SSH deploy key
+  $0 meu-projeto --no-db               -> skip database provisioning
 EOF
   exit 1
 }
@@ -41,6 +43,7 @@ PREFIX="api"
 WITH_NAME=false
 PORT="3000"
 DEPLOY_KEY=false
+NO_DB=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --prefix|-p)
@@ -61,6 +64,10 @@ while [ $# -gt 0 ]; do
       DEPLOY_KEY=true
       shift
       ;;
+    --no-db)
+      NO_DB=true
+      shift
+      ;;
     *)
       echo "Error: unknown argument '$1'" >&2
       usage
@@ -75,7 +82,7 @@ fi
 
 [ -f "$ROOT_DIR/.env" ] && set -a && . "$ROOT_DIR/.env" && set +a
 
-if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ]; then
+if [ "$NO_DB" = false ] && { [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ]; }; then
   echo "Error: POSTGRES_USER and POSTGRES_PASSWORD must be set in .env" >&2
   exit 1
 fi
@@ -85,8 +92,10 @@ if [ -z "$DOMAIN_BASE" ]; then
   exit 1
 fi
 
-DB_NAME="${NAME//-/_}"
-DB_USER="${NAME//-/_}"
+if [ "$NO_DB" = false ]; then
+  DB_NAME="${NAME//-/_}"
+  DB_USER="${NAME//-/_}"
+fi
 if [ "$WITH_NAME" = true ]; then
   if [ "$PREFIX" = "@" ]; then
     API_SUBDOMAIN="${NAME}.${DOMAIN_BASE}"
@@ -102,16 +111,19 @@ else
 fi
 CADDY_FILE="$SITES_DIR/${NAME}.caddy"
 
-DB_PASSWORD=$(openssl rand -hex 16)
-
 echo "[provision] Project: $NAME"
-echo "[provision] Database: $DB_NAME / User: $DB_USER"
-echo "[provision] API subdomain: $API_SUBDOMAIN"
+if [ "$NO_DB" = false ]; then
+  echo "[provision] Database: $DB_NAME / User: $DB_USER"
+fi
+echo "[provision] Subdomain: $API_SUBDOMAIN"
 echo ""
 
-echo "[provision] Creating PostgreSQL user and database..."
-docker compose -f "$ROOT_DIR/docker-compose.yml" exec -T postgres \
-  bash /scripts/create-user-db.sh "$DB_USER" "$DB_PASSWORD" "$DB_NAME" app
+if [ "$NO_DB" = false ]; then
+  DB_PASSWORD=$(openssl rand -hex 16)
+  echo "[provision] Creating PostgreSQL user and database..."
+  docker compose -f "$ROOT_DIR/docker-compose.yml" exec -T postgres \
+    bash /scripts/create-user-db.sh "$DB_USER" "$DB_PASSWORD" "$DB_NAME" app
+fi
 
 mkdir -p "$SITES_DIR"
 
@@ -138,11 +150,15 @@ if [ "$DEPLOY_KEY" = true ]; then
 fi
 
 echo ""
-echo "[provision] Done! Save these credentials in the project .env:"
+echo "[provision] Done!"
 echo ""
-echo "  DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}"
-echo "  REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/<db-index>"
-echo ""
+if [ "$NO_DB" = false ]; then
+  echo "  Save these credentials in the project .env:"
+  echo ""
+  echo "  DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}"
+  echo "  REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/<db-index>"
+  echo ""
+fi
 echo "  Project deploy path: /home/deploy/projects/${NAME}/"
 echo "  Caddy site: $CADDY_FILE"
 echo ""
