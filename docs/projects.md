@@ -126,9 +126,9 @@ networks:
 ./scripts/deprovision-project.sh meu-projeto
 ```
 
-Remove o banco, o usuário do PostgreSQL e o arquivo `.caddy`, e recarrega o Caddy.
+Remove o banco, o usuário do PostgreSQL, o arquivo `.caddy`, recarrega o Caddy e, se existir, a deploy key em `~/.ssh/meu-projeto_deploy_key`.
 
-Depois, remova manualmente da VPS:
+Depois, remova manualmente o diretório do projeto da VPS:
 
 ```bash
 rm -rf /home/deploy/projects/meu-projeto

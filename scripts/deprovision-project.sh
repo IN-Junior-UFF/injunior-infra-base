@@ -59,6 +59,12 @@ else
   echo "[deprovision] Caddy site file not found, skipping."
 fi
 
+DEPLOY_KEY="$HOME/.ssh/${NAME}_deploy_key"
+if [ -f "$DEPLOY_KEY" ]; then
+  echo "[deprovision] Removing deploy key..."
+  rm -f "$DEPLOY_KEY" "${DEPLOY_KEY}.pub"
+fi
+
 echo "[deprovision] Done. Remember to:"
 echo "  - Remove /home/deploy/projects/${NAME}/ from the VPS"
 echo "  - Disable the deploy workflow in the project repo"
