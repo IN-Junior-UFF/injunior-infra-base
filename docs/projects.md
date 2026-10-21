@@ -156,18 +156,34 @@ Depois, recarregue: `docker compose exec caddy caddy reload --config /etc/caddy/
 - `try_files {path} /index.html` faz rotas do SPA (`/pacientes/123`) devolverem o `index.html` em vez de 404.
 - Os assets do Vite têm hash no nome, por isso o cache é longo. O `index.html` é `no-cache`, para o deploy aparecer na hora.
 
-**Deploy pelo CI:** envie o build para uma pasta temporária e troque de uma vez, para ninguém receber um `index.html` novo apontando para assets que ainda não chegaram. Faça tudo **numa conexão SSH só**: o UFW do bootstrap (`injunior-infra-ansible`) usa `LIMIT` na porta SSH e bloqueia por 30s o IP que abrir 6 ou mais conexões em 30s. A `appleboy/scp-action` abre várias seguidas e cai nesse bloqueio.
+**Deploy pelo CI, com versões e rollback instantâneo:** cada deploy vira uma pasta em `www/<nome>-releases/<data>-<sha>`, e `www/<nome>` (o `root` do Caddy) é um **symlink** para a versão ativa. A troca é um `rename` atômico do link, então ninguém recebe um `index.html` novo apontando para assets que ainda não chegaram. As últimas versões continuam guardadas, e voltar é só reapontar o link, sem rebuild. O Caddy segue o symlink normalmente, porque o caminho relativo fica dentro da pasta montada.
+
+Faça tudo **numa conexão SSH só**: o UFW do bootstrap (`injunior-infra-ansible`) usa `LIMIT` na porta SSH e bloqueia por 30s o IP que abrir 6 ou mais conexões em 30s. A `appleboy/scp-action` abre várias seguidas e cai nesse bloqueio.
 
 ```bash
 tar -C dist -czf - . | ssh -p "$PORT" deploy@"$HOST" '
   set -e; cd /home/deploy/infra-base/compose/caddy/www
-  NEW=.release-$RANDOM; mkdir "$NEW"; tar -xzf - -C "$NEW"
-  test -f "$NEW/index.html"
-  rm -rf <nome>.old; [ -d <nome> ] && mv <nome> <nome>.old
-  mv "$NEW" <nome>; rm -rf <nome>.old .release-*'
+  R=<nome>-releases; KEEP=5; mkdir -p "$R"
+  IN="$R/.incoming-$$"; mkdir "$IN"; tar -xzf - -C "$IN"
+  test -f "$IN/index.html"
+  NEW="$R/$(date -u +%Y%m%dT%H%M%S)-'"${GITHUB_SHA::7}"'"; mv "$IN" "$NEW"
+  ln -sfn "$NEW" .<nome>.tmp && mv -T .<nome>.tmp <nome>
+  ACTIVE=$(readlink <nome>)
+  ls -1d "$R"/*/ | sed "s#/\$##" | sort -r | tail -n +$((KEEP + 1)) \
+    | while read -r old; do [ "$old" = "$ACTIVE" ] || rm -rf "$old"; done'
 ```
 
-O `deprovision-project.sh` remove o `.caddy`, mas não a pasta `compose/caddy/www/<nome>`. Apague essa pasta à mão.
+Rollback para uma versão guardada:
+
+```bash
+cd /home/deploy/infra-base/compose/caddy/www
+ls <nome>-releases                       # versões disponíveis
+ln -sfn <nome>-releases/<versão> .<nome>.tmp && mv -T .<nome>.tmp <nome>
+```
+
+Para uma implementação completa, com workflow de deploy e de rollback (versão anterior ou escolhida pelo nome), veja o `frontend-sistema-mex` (`.github/workflows/deploy-production.yml` e `rollback-production.yml`).
+
+O `deprovision-project.sh` remove o `.caddy`, mas não `compose/caddy/www/<nome>` nem `<nome>-releases/`. Apague as duas à mão.
 
 ## Removendo um projeto
 
