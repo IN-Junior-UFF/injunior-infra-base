@@ -1,3 +1,4 @@
 .env
 compose/redis/redis.conf
 compose/caddy/sites/*.caddy
+compose/caddy/www/

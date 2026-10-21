@@ -106,7 +106,8 @@ REDIS_URL=redis://:<REDIS_PASSWORD>@redis:6379/<db-index>
 
 O container do projeto precisa:
 
-- Usar `infra-network` como rede externa para acessar postgres e redis
+- Usar a rede da infra como rede externa para acessar postgres e redis. O nome real dela é **`infra-base_infra-network`**: o Compose prefixa a rede com o nome do projeto, que é o nome da pasta (`infra-base`). Por isso o `name:` é obrigatório. Sem ele, o Compose procura uma rede chamada literalmente `infra-network` e falha com `network infra-network declared as external, but could not be found`.
+- Ter o serviço (ou `hostname:`) com o **mesmo nome** usado no `provision-project.sh`, porque o Caddy faz `reverse_proxy <nome>:<porta>`
 - Expor a porta internamente na mesma porta configurada no provision (padrão `3000`)
 
 Exemplo mínimo:
@@ -123,7 +124,50 @@ services:
 networks:
   infra-network:
     external: true
+    name: infra-base_infra-network
 ```
+
+## Frontend estático (SPA) servido pelo próprio Caddy
+
+Para um frontend que compila para arquivos estáticos (Vite/React, Vue etc.), não é preciso container: o Caddy da infra serve o `dist/` direto. A pasta `compose/caddy/` já é montada no Caddy em `/etc/caddy`, e `compose/caddy/www/` é ignorada pelo git.
+
+O `provision-project.sh` só gera `reverse_proxy`, então o site é escrito à mão em `compose/caddy/sites/<nome>.caddy`:
+
+```caddy
+meu-dominio.com {
+	import compression
+	import security_headers
+	root * /etc/caddy/www/<nome>
+	@notAssets not path /assets/*
+	header @notAssets Cache-Control "no-cache"
+	header /assets/* Cache-Control "public, max-age=31536000, immutable"
+	try_files {path} /index.html
+	file_server
+}
+
+# opcional: www → domínio principal
+www.meu-dominio.com {
+	redir https://meu-dominio.com{uri} permanent
+}
+```
+
+Depois, recarregue: `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile`.
+
+- `try_files {path} /index.html` faz rotas do SPA (`/pacientes/123`) devolverem o `index.html` em vez de 404.
+- Os assets do Vite têm hash no nome, por isso o cache é longo. O `index.html` é `no-cache`, para o deploy aparecer na hora.
+
+**Deploy pelo CI:** envie o build para uma pasta temporária e troque de uma vez, para ninguém receber um `index.html` novo apontando para assets que ainda não chegaram. Faça tudo **numa conexão SSH só**: o UFW do bootstrap (`injunior-infra-ansible`) usa `LIMIT` na porta SSH e bloqueia por 30s o IP que abrir 6 ou mais conexões em 30s. A `appleboy/scp-action` abre várias seguidas e cai nesse bloqueio.
+
+```bash
+tar -C dist -czf - . | ssh -p "$PORT" deploy@"$HOST" '
+  set -e; cd /home/deploy/infra-base/compose/caddy/www
+  NEW=.release-$RANDOM; mkdir "$NEW"; tar -xzf - -C "$NEW"
+  test -f "$NEW/index.html"
+  rm -rf <nome>.old; [ -d <nome> ] && mv <nome> <nome>.old
+  mv "$NEW" <nome>; rm -rf <nome>.old .release-*'
+```
+
+O `deprovision-project.sh` remove o `.caddy`, mas não a pasta `compose/caddy/www/<nome>`. Apague essa pasta à mão.
 
 ## Removendo um projeto
 
