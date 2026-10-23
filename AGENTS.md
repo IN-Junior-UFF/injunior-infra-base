@@ -50,6 +50,8 @@ sudo ./scripts/setup-docker-logs.sh
 - `compose/redis/redis.conf` é gerado pelo `setup.sh` a partir do template `redis.conf.template` com a senha substituída; não é commitado no git
 - `compose/caddy/Caddyfile` define apenas snippets reutilizáveis (`security_headers`, `compression`, `proxy_headers`) e `import sites/*.caddy` — nenhuma rota hardcoded; cada projeto tem seu próprio arquivo em `sites/`
 - Arquivos `compose/caddy/sites/*.caddy` são gerados pelo `provision-project.sh` e ignorados pelo git (gerados em runtime); o Caddy recarrega automaticamente via `caddy reload` após cada provision/deprovision
+- `compose/caddy/www/` (ignorada pelo git) guarda builds de frontends estáticos servidos pelo Caddy com `file_server`, com `.caddy` escrito à mão (ver `docs/projects.md`)
+- A rede da infra se chama `infra-base_infra-network` (prefixo = nome da pasta); compose de projeto precisa de `external: true` **e** `name: infra-base_infra-network`
 - API dos projetos segue o padrão `api.<nome>.<DOMAIN_BASE>` — o Caddy roteia para o container `<nome>:3000` na `infra-network`
 - Rede Docker: `infra-network` (bridge) — todos os containers da infra e dos projetos se comunicam por ela; projetos declaram a rede como `external: true` nos seus `docker-compose.prod.yml`
 - PostgreSQL 18+ usa `PGDATA=/var/lib/postgresql/18/docker` no volume montado em `/var/lib/postgresql` — compatível com `pg_upgrade --link` em versões futuras; `--data-checksums` ativado no initdb para detecção de corrupção silenciosa
